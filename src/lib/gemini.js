@@ -5,8 +5,8 @@ export function hasGemini(overrideKey) {
     return Boolean(overrideKey || env.GEMINI_API_KEY);
 }
 
-export async function geminiGenerate({ contents, systemPrompt = '', config ={} }) {
-    const key =  env.GEMINI_API_KEY;
+export async function geminiGenerate({ contents, systemPrompt = '', config ={}, apiKey = null }) {
+    const key = apiKey || env.GEMINI_API_KEY;
     if (!key) throw new Error('GEMINI_API_KEY not set');
 
     const ai = new GoogleGenAI({ apiKey: key });
@@ -14,8 +14,9 @@ export async function geminiGenerate({ contents, systemPrompt = '', config ={} }
         config.systemInstruction = { role: 'model', parts: [{ text: systemPrompt }] };
     }
 
+    const model = env.GEMINI_MODEL || 'gemini-2.5-flash';
     const request = {
-        model: 'gemini-2.5-flash',
+        model: model,
         contents: contents,
         config: config
     };
@@ -24,5 +25,3 @@ export async function geminiGenerate({ contents, systemPrompt = '', config ={} }
     const text = typeof response?.text === 'string' ? response.text : '';
     return { text, raw: response };
 }
-
-

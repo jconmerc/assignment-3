@@ -1,11 +1,9 @@
 import { json } from '@sveltejs/kit';
-import { LeadershipRouter } from '$lib/orchestrators/LeadershipRouter.js';
+import { LeadershipSynthesizer } from '$lib/orchestrators/LeadershipSynthesizer.js';
 
 /**
- * Handle chat POST requests for a single-turn pipeline execution.
- *
- * Parameters: ({ request }) SvelteKit request wrapper.
- * Returns: JSON response with pipeline output or error.
+ * Handle chat POST requests for synthesizer pipeline execution.
+ * This endpoint uses the synthesizer that combines all 6 leadership styles.
  */
 export async function POST({ request }) {
   const body = await request.json();
@@ -16,13 +14,22 @@ export async function POST({ request }) {
   }
 
   try {
-    const orchestrator = new LeadershipRouter();
+    const synthesizer = new LeadershipSynthesizer();
     const contents = history.map((m) => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] }));
 
     // Use user's API key if provided, otherwise use environment variable
-    const { assistantMessage, frameSet, agent, reasons } = await orchestrator.orchestrate(contents, apiKey);
+    const { assistantMessage, frameSet, agent, reasons, individualResponses } = await synthesizer.orchestrate(contents, apiKey);
 
-    return json({ assistantMessage, replierInput: { frameSet, contextCount: history.length, agent, reasons } });
+    return json({
+      assistantMessage,
+      replierInput: {
+        frameSet,
+        contextCount: history.length,
+        agent,
+        reasons,
+        individualResponses
+      }
+    });
   } catch (err) {
     const msg = String(err?.message || err || '').toLowerCase();
     if (msg.includes('gemini_api_key') || msg.includes('gemini') || msg.includes('api key')) {
